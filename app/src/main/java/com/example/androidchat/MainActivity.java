@@ -28,6 +28,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +45,8 @@ public class MainActivity extends AppCompatActivity {
 
     FirebaseDatabase database;
     DatabaseReference messagesDatabaseReference;
+    DatabaseReference usersDatabaseReference;
+    ChildEventListener usersChildEventListener;
 
 
     @Override
@@ -59,8 +62,14 @@ public class MainActivity extends AppCompatActivity {
         database = FirebaseDatabase.getInstance();
         messagesDatabaseReference = database.getReference().child("messages");
         ChildEventListener messagesChildEventListener;
+        usersDatabaseReference = database.getReference().child("users");
 
-        userName = "Default User";
+        Intent intent = getIntent();
+        if (intent != null) {
+            userName = intent.getStringExtra("userName");
+        } else {
+            userName = "Default User";
+        }
 
         messageListView = findViewById(R.id.messageListView);
         List<Message> Messages = new ArrayList<>();
@@ -116,6 +125,38 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        usersChildEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                User user = dataSnapshot.getValue(User.class);
+                if (user.getId().equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
+                    userName = user.getName();
+                }
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+
+        usersDatabaseReference.addChildEventListener(usersChildEventListener);
+
         messagesChildEventListener = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
