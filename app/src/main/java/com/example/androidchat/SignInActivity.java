@@ -62,7 +62,7 @@ public class SignInActivity extends AppCompatActivity {
             }
         });
         if (auth.getCurrentUser() != null) {
-            startActivity(new Intent(SignInActivity.this, MainActivity.class));
+            startActivity(new Intent(SignInActivity.this, UserListActivity.class));
         }
 
     }
@@ -86,7 +86,7 @@ public class SignInActivity extends AppCompatActivity {
                                     Log.d(TAG, "signInWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
                                     Intent intent = new Intent(SignInActivity.this,
-                                            MainActivity.class);
+                                            UserListActivity.class);
                                     intent.putExtra("userName", nameEditText.getText().toString().trim());
                                     startActivity(intent);
                                     //updateUI(user);
@@ -124,7 +124,7 @@ public class SignInActivity extends AppCompatActivity {
                                     FirebaseUser user = auth.getCurrentUser();
                                     //updateUI(user);
                                     Intent intent = new Intent(SignInActivity.this,
-                                            MainActivity.class);
+                                            UserListActivity.class);
                                     intent.putExtra("userName", nameEditText.getText().toString().trim());
                                     startActivity(intent);
                                 } else {
