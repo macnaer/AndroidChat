@@ -34,8 +34,9 @@ public class SignInActivity extends AppCompatActivity {
     private Button loginSignUpButton;
 
     private boolean loginModeActive;
-    FirebaseDatabase database;
-    DatabaseReference usersDatabaseReference;
+
+    private FirebaseDatabase database;
+    private DatabaseReference usersDatabaseReference;
 
 
     @Override
@@ -49,8 +50,8 @@ public class SignInActivity extends AppCompatActivity {
 
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
-        nameEditText = findViewById(R.id.nameEditText);
         repeatPasswordEditText = findViewById(R.id.repeatPasswordEditText);
+        nameEditText = findViewById(R.id.nameEditText);
         toggleLoginSignUpTextView = findViewById(R.id.toggleLoginSignUpTextView);
         loginSignUpButton = findViewById(R.id.loginSignUpButton);
 
@@ -61,6 +62,7 @@ public class SignInActivity extends AppCompatActivity {
                         passwordEditText.getText().toString().trim());
             }
         });
+
         if (auth.getCurrentUser() != null) {
             startActivity(new Intent(SignInActivity.this, UserListActivity.class));
         }
@@ -102,6 +104,7 @@ public class SignInActivity extends AppCompatActivity {
                             }
                         });
             }
+
         } else {
             if (!passwordEditText.getText().toString().trim().equals(
                     repeatPasswordEditText.getText().toString().trim()
@@ -122,6 +125,7 @@ public class SignInActivity extends AppCompatActivity {
                                     // Sign in success, update UI with the signed-in user's information
                                     Log.d(TAG, "createUserWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
+                                    createUser(user);
                                     //updateUI(user);
                                     Intent intent = new Intent(SignInActivity.this,
                                             UserListActivity.class);
@@ -139,7 +143,12 @@ public class SignInActivity extends AppCompatActivity {
                             }
                         });
             }
+
         }
+
+
+
+
 
     }
 
@@ -159,6 +168,7 @@ public class SignInActivity extends AppCompatActivity {
             loginSignUpButton.setText("Sign Up");
             toggleLoginSignUpTextView.setText("Or, log in");
             repeatPasswordEditText.setVisibility(View.VISIBLE);
+
         } else {
             loginModeActive = true;
             loginSignUpButton.setText("Log In");

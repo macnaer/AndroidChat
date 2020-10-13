@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 
 public class UserListActivity extends AppCompatActivity {
 
+    private String userName;
+
     private FirebaseAuth auth;
     private DatabaseReference usersDatabaseReference;
     private ChildEventListener usersChildEventListener;
@@ -36,6 +39,12 @@ public class UserListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_list);
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            userName = intent.getStringExtra(userName);
+        }
+
         auth = FirebaseAuth.getInstance();
 
         userArrayList = new ArrayList<>();
@@ -51,13 +60,15 @@ public class UserListActivity extends AppCompatActivity {
         if (usersChildEventListener == null) {
             usersChildEventListener = new ChildEventListener() {
                 @Override
-                public void onChildAdded(@NonNull  DataSnapshot dataSnapshot, @Nullable String s) {
+                public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                     User user = dataSnapshot.getValue(User.class);
+
                     if (!user.getId().equals(auth.getCurrentUser().getUid()) ) {
                         user.setAvatarMockUpResource(R.drawable.ic_person_black_24dp);
                         userArrayList.add(user);
                         userAdapter.notifyDataSetChanged();
                     }
+
                 }
 
                 @Override
@@ -89,20 +100,30 @@ public class UserListActivity extends AppCompatActivity {
 
         userRecyclerView = findViewById(R.id.userListRecyclerView);
         userRecyclerView.setHasFixedSize(true);
+        userRecyclerView.addItemDecoration(new DividerItemDecoration(
+                userRecyclerView.getContext(), DividerItemDecoration.VERTICAL));
         userLayoutManager = new LinearLayoutManager(this);
         userAdapter = new UserAdapter(userArrayList);
 
         userRecyclerView.setLayoutManager(userLayoutManager);
         userRecyclerView.setAdapter(userAdapter);
+
         userAdapter.setOnUserClickListener(new UserAdapter.OnUserClickListener() {
             @Override
             public void onUserClick(int position) {
-                goToChat();
+                goToChat(position);
             }
         });
     }
-    private void goToChat() {
-        Intent intent = new Intent(UserListActivity.this, MainActivity.class);
+
+    private void goToChat(int position) {
+        Intent intent = new Intent(UserListActivity.this,
+                MainActivity.class);
+        intent.putExtra("recipientUserId",
+                userArrayList.get(position).getId());
+        intent.putExtra("recipientUserName",
+                userArrayList.get(position).getName());
+        intent.putExtra("userName", userName);
         startActivity(intent);
     }
 

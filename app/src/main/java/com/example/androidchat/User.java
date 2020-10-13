@@ -21,14 +21,6 @@ public class User {
         return name;
     }
 
-    public int getAvatarMockUpResource() {
-        return avatarMockUpResource;
-    }
-
-    public void setAvatarMockUpResource(int avatarMockUpResource) {
-        this.avatarMockUpResource = avatarMockUpResource;
-    }
-
     public void setName(String name) {
         this.name = name;
     }
@@ -47,5 +39,13 @@ public class User {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getAvatarMockUpResource() {
+        return avatarMockUpResource;
+    }
+
+    public void setAvatarMockUpResource(int avatarMockUpResource) {
+        this.avatarMockUpResource = avatarMockUpResource;
     }
 }
