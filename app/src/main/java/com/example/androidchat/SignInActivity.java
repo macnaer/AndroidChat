@@ -1,5 +1,6 @@
 package com.example.androidchat;
 
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -143,13 +144,7 @@ public class SignInActivity extends AppCompatActivity {
                             }
                         });
             }
-
         }
-
-
-
-
-
     }
 
     private void createUser(FirebaseUser firebaseUser) {

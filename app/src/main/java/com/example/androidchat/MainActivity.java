@@ -1,13 +1,11 @@
 package com.example.androidchat;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-//import android.support.annotation.NonNull;
-//import android.support.annotation.Nullable;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
-import android.content.Intent;
-import android.net.Uri;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -35,11 +33,10 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity {
 
     private ListView messageListView;
     private MessageAdapter adapter;
@@ -49,45 +46,54 @@ public class MainActivity extends AppCompatActivity {
     private EditText messageEditText;
 
     private String userName;
+    private String recipientUserId;
+    private String recipientUserName;
+
     private static final int RC_IMAGE_PICKER = 123;
 
-    FirebaseDatabase database;
-    DatabaseReference messagesDatabaseReference;
-    DatabaseReference usersDatabaseReference;
-    ChildEventListener usersChildEventListener;
 
-    FirebaseStorage storage;
-    StorageReference chatImagesStorageReference;
+    private FirebaseAuth auth;
+    private FirebaseDatabase database;
+    private DatabaseReference messagesDatabaseReference;
+    private ChildEventListener messagesChildEventListener;
+    private DatabaseReference usersDatabaseReference;
+    private ChildEventListener usersChildEventListener;
 
+    private FirebaseStorage storage;
+    private StorageReference chatImagesStorageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        auth = FirebaseAuth.getInstance();
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            userName = intent.getStringExtra("userName");
+            recipientUserId = intent.getStringExtra("recipientUserId");
+            recipientUserName = intent.getStringExtra("recipientUserName");
+        }
+
+        setTitle("Chat with " + recipientUserName);
+
+        database = FirebaseDatabase.getInstance();
+        storage = FirebaseStorage.getInstance();
+
+        messagesDatabaseReference = database.getReference().child("messages");
+        usersDatabaseReference = database.getReference().child("users");
+        chatImagesStorageReference = storage.getReference().child("chat_images");
+
         progressBar = findViewById(R.id.progressBar);
         sendImageButton = findViewById(R.id.sendPhotoButton);
         sendMessageButton = findViewById(R.id.sendMessageButton);
         messageEditText = findViewById(R.id.messageEditText);
 
-        database = FirebaseDatabase.getInstance();
-        storage = FirebaseStorage.getInstance();
-        messagesDatabaseReference = database.getReference().child("messages");
-        ChildEventListener messagesChildEventListener;
-        usersDatabaseReference = database.getReference().child("users");
-        chatImagesStorageReference = storage.getReference().child("images");
-
-        Intent intent = getIntent();
-        if (intent != null) {
-            userName = intent.getStringExtra("userName");
-        } else {
-            userName = "Default User";
-        }
-
         messageListView = findViewById(R.id.messageListView);
-        List<Message> Messages = new ArrayList<>();
+        List<Message> awesomeMessages = new ArrayList<>();
         adapter = new MessageAdapter(this, R.layout.message_item,
-                Messages);
+                awesomeMessages);
         messageListView.setAdapter(adapter);
 
         progressBar.setVisibility(ProgressBar.INVISIBLE);
@@ -123,12 +129,17 @@ public class MainActivity extends AppCompatActivity {
         sendMessageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 Message message = new Message();
                 message.setText(messageEditText.getText().toString());
                 message.setName(userName);
+                message.setSender(auth.getCurrentUser().getUid());
+                message.setRecipient(recipientUserId);
                 message.setImageUrl(null);
 
                 messagesDatabaseReference.push().setValue(message);
+
+                messageEditText.setText("");
             }
         });
 
@@ -136,12 +147,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("image/jpeg");
+                intent.setType("image/*");
                 intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
                 startActivityForResult(Intent.createChooser(intent, "Choose an image"),
                         RC_IMAGE_PICKER);
             }
         });
+
         usersChildEventListener = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
@@ -180,7 +192,16 @@ public class MainActivity extends AppCompatActivity {
                 Message message =
                         dataSnapshot.getValue(Message.class);
 
-                adapter.add(message);
+                if (message.getSender().equals(auth.getCurrentUser().getUid())
+                        && message.getRecipient().equals(recipientUserId)) {
+                    message.setMine(true);
+                    message.setName(userName);
+                    adapter.add(message);
+                } else if (message.getRecipient().equals(auth.getCurrentUser().getUid())
+                        && message.getSender().equals(recipientUserId)) {
+                    message.setMine(false);
+                    adapter.add(message);
+                }
             }
 
             @Override
@@ -205,9 +226,28 @@ public class MainActivity extends AppCompatActivity {
         };
 
         messagesDatabaseReference.addChildEventListener(messagesChildEventListener);
-
-
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.sign_out:
+                FirebaseAuth.getInstance().signOut();
+                startActivity(new Intent(ChatActivity.this, SignInActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -238,6 +278,8 @@ public class MainActivity extends AppCompatActivity {
                         Message message = new Message();
                         message.setImageUrl(downloadUri.toString());
                         message.setName(userName);
+                        message.setSender(auth.getCurrentUser().getUid());
+                        message.setRecipient(recipientUserId);
                         messagesDatabaseReference.push().setValue(message);
                     } else {
                         // Handle failures
@@ -245,26 +287,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-        }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case R.id.sign_out:
-                FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(MainActivity.this, SignInActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
         }
     }
 }
